@@ -159,8 +159,8 @@ class ServerConnectivityInfo(object):
         self.http_tunneling_settings = http_tunneling_settings
 
         # Set after actually testing the connectivity
-        self.highest_ssl_version_supported = None
-        self.ssl_cipher_supported = None
+        self.ssl_versions_supported = []
+        self.ssl_ciphers_supported = {}
         self.client_auth_requirement = None
 
 
@@ -208,8 +208,8 @@ class ServerConnectivityInfo(object):
             ssl_connection.close()
 
         # Then try to complete an SSL handshake to figure out the SSL version and cipher supported by the server
-        ssl_version_supported = None
-        ssl_cipher_supported = None
+        ssl_versions_supported = []
+        ssl_ciphers_supported = {}
 
         for ssl_version in [OpenSslVersionEnum.TLSV1_2, OpenSslVersionEnum.TLSV1_1, OpenSslVersionEnum.TLSV1,
                             OpenSslVersionEnum.SSLV3, OpenSslVersionEnum.SSLV23]:
@@ -221,14 +221,14 @@ class ServerConnectivityInfo(object):
                 try:
                     # Only do one attempt when testing connectivity
                     ssl_connection.connect(network_timeout=network_timeout, network_max_retries=0)
-                    ssl_version_supported = ssl_version
-                    ssl_cipher_supported = ssl_connection.get_current_cipher_name()
+                    ssl_versions_supported.append(ssl_version)
+                    ssl_ciphers_supported[ssl_version] = ssl_connection.get_current_cipher_name()
                     break
                 except ClientCertificateRequested:
                     # Connection successful but the servers wants a client certificate which wasn't supplied to sslyze
                     # Store the SSL version and cipher list that is supported
-                    ssl_version_supported = ssl_version
-                    ssl_cipher_supported = cipher_list
+                    ssl_versions_supported.append(ssl_version)
+                    ssl_ciphers_supported[ssl_version] = ssl_connection.get_current_cipher_name()
 
                     # Try a new connection to see if client authentication is optional
                     ssl_connection_auth = self.get_preconfigured_ssl_connection(override_ssl_version=ssl_version,
@@ -236,7 +236,7 @@ class ServerConnectivityInfo(object):
                     ssl_connection_auth.set_cipher_list(cipher_list)
                     try:
                         ssl_connection_auth.connect(network_max_retries=0)
-                        ssl_cipher_supported = ssl_connection_auth.get_current_cipher_name()
+                        ssl_ciphers_supported = ssl_connection_auth.get_current_cipher_name()
                         client_auth_requirement = ClientAuthenticationServerConfigurationEnum.OPTIONAL
                     except:
                         client_auth_requirement = ClientAuthenticationServerConfigurationEnum.REQUIRED
@@ -249,20 +249,20 @@ class ServerConnectivityInfo(object):
                 finally:
                     ssl_connection.close()
 
-            if ssl_cipher_supported:
-                # A handshake was successful
-                break
-
-        if ssl_version_supported is None or ssl_cipher_supported is None:
+        if not ssl_versions_supported:
             raise ServerConnectivityError(self.CONNECTIVITY_ERROR_HANDSHAKE_ERROR)
 
-        self.highest_ssl_version_supported = ssl_version_supported
-        self.ssl_cipher_supported = ssl_cipher_supported
+        self.ssl_versions_supported = ssl_versions_supported
+        self.ssl_ciphers_supported = ssl_ciphers_supported
         self.client_auth_requirement = client_auth_requirement
+
+    @property
+    def highest_ssl_version_supported(self):
+        return self.ssl_versions_supported[-1] if self.ssl_versions_supported else None
 
 
     def get_preconfigured_ssl_connection(self, override_ssl_version=None, ssl_verify_locations=None,
-                                         should_ignore_client_auth=None):
+                                         should_ignore_client_auth=None, override_cipher_list=None):
         # type: (Optional[int], Optional[bool], Optional[bool]) -> SSLConnection
         """Get an SSLConnection instance with the right SSL configuration for successfully connecting to the server.
 
@@ -305,8 +305,14 @@ class ServerConnectivityInfo(object):
             ssl_connection.set_tlsext_host_name(self.tls_server_name_indication)
 
         # Add well-known supported cipher suite
-        if self.ssl_cipher_supported and override_ssl_version is None:
-            ssl_connection.set_cipher_list(self.ssl_cipher_supported)
+        if override_cipher_list is None:
+            ssl_version = self.highest_ssl_version_supported if override_ssl_version is None else override_ssl_version
+            cipher_list = self.ssl_ciphers_supported.get(ssl_version, None)
+        else:
+            cipher_list = override_cipher_list
+
+        if cipher_list:
+            ssl_connection.set_cipher_list(cipher_list)
 
         return ssl_connection
 
