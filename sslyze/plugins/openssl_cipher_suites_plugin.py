@@ -81,6 +81,20 @@ class Tlsv12ScanCommand(CipherSuiteScanCommand):
     def get_cli_argument(cls):
         return 'tlsv1_2'
 
+class DTlsv10ScanCommand(CipherSuiteScanCommand):
+    """List the DTLS 1.0 OpenSSL cipher suites supported by the server(s).
+    """
+    @classmethod
+    def get_cli_argument(cls):
+        return 'dtlsv1'
+
+
+class DTlsv12ScanCommand(CipherSuiteScanCommand):
+    """List the DTLS 1.2 OpenSSL cipher suites supported by the server(s).
+    """
+    @classmethod
+    def get_cli_argument(cls):
+        return 'dtlsv1_2'
 
 class OpenSslCipherSuitesPlugin(Plugin):
     """Scan the server(s) for supported OpenSSL cipher suites.
@@ -92,12 +106,18 @@ class OpenSslCipherSuitesPlugin(Plugin):
         Sslv30ScanCommand: OpenSslVersionEnum.SSLV3,
         Tlsv10ScanCommand: OpenSslVersionEnum.TLSV1,
         Tlsv11ScanCommand: OpenSslVersionEnum.TLSV1_1,
-        Tlsv12ScanCommand: OpenSslVersionEnum.TLSV1_2
+        Tlsv12ScanCommand: OpenSslVersionEnum.TLSV1_2,
+        DTlsv10ScanCommand: OpenSslVersionEnum.DTLSV1,
+        DTlsv12ScanCommand: OpenSslVersionEnum.DTLSV1_2,
     }
 
     @classmethod
     def get_available_commands(cls):
-        return [Sslv20ScanCommand, Sslv30ScanCommand, Tlsv10ScanCommand, Tlsv11ScanCommand, Tlsv12ScanCommand]
+        return [
+                Sslv20ScanCommand, Sslv30ScanCommand,
+                Tlsv10ScanCommand, Tlsv11ScanCommand, Tlsv12ScanCommand,
+                DTlsv10ScanCommand, DTlsv12ScanCommand
+        ]
 
 
     @classmethod
@@ -713,4 +733,6 @@ OPENSSL_TO_RFC_NAMES_MAPPING = {
     OpenSslVersionEnum.TLSV1: TLS_OPENSSL_TO_RFC_NAMES_MAPPING,
     OpenSslVersionEnum.TLSV1_1: TLS_OPENSSL_TO_RFC_NAMES_MAPPING,
     OpenSslVersionEnum.TLSV1_2: TLS_OPENSSL_TO_RFC_NAMES_MAPPING,
+    OpenSslVersionEnum.DTLSV1: TLS_OPENSSL_TO_RFC_NAMES_MAPPING,
+    OpenSslVersionEnum.DTLSV1_2: TLS_OPENSSL_TO_RFC_NAMES_MAPPING,
 }
