@@ -6,9 +6,13 @@ python:
 # Command to install dependencies
 install:
   - pip install -U pip setuptools
+  - pip install coveralls
   - pip install -r requirements.txt
 # Command to run tests
-script: "python setup.py test"
+script:
+  coverage run --source=sslyze setup.py test
+after_success:
+  coveralls
 deploy:
   provider: pypi
   user: "nabla"
