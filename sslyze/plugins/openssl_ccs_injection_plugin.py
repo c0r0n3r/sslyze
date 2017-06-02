@@ -107,6 +107,8 @@ class OpenSslCcsInjectionPlugin(plugin_base.Plugin):
         OpenSslVersionEnum.TLSV1: b'\x03\x01',
         OpenSslVersionEnum.TLSV1_1: b'\x03\x02',
         OpenSslVersionEnum.TLSV1_2: b'\x03\x03',
+        OpenSslVersionEnum.DTLSV1: b'\xfe\xff',
+        OpenSslVersionEnum.DTLSV1_2: b'\xfe\xfd',
     }
 
     ssl3_cipher = [

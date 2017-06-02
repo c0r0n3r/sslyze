@@ -67,6 +67,19 @@ class ServerConnectivityInfo(object):
         TlsWrappedProtocolEnum.STARTTLS_POSTGRES: PostgresConnection,
     }
 
+    TLS_VERSIONS = [
+        OpenSslVersionEnum.TLSV1_2,
+        OpenSslVersionEnum.TLSV1_1,
+        OpenSslVersionEnum.TLSV1,
+        OpenSslVersionEnum.SSLV3,
+        OpenSslVersionEnum.SSLV23
+    ]
+
+    DTLS_VERSIONS = [
+        OpenSslVersionEnum.DTLSV1_2,
+        OpenSslVersionEnum.DTLSV1,
+    ]
+
     CONNECTIVITY_ERROR_NAME_NOT_RESOLVED = 'Could not resolve {hostname}'
     CONNECTIVITY_ERROR_TIMEOUT = 'Could not connect (timeout)'
     CONNECTIVITY_ERROR_REJECTED = 'Connection rejected'
@@ -164,23 +177,8 @@ class ServerConnectivityInfo(object):
         self.client_auth_requirement = None
 
 
-    def test_connectivity_to_server(self, network_timeout=None):
-        # type: (Optional[int]) -> None
-        """Attempts to perform a full SSL/TLS handshake with the server.
-
-        This method will ensure that the server can be reached, and will also identify one SSL/TLS version and one
-        cipher suite supported by the server. If the connectivity test is successful, the `ServerConnectivityInfo`
-        object is then ready to be passed to a `SynchronousScanner` or `ConcurrentScanner` in order to run scan commands
-        on the server.
-
-        Args:
-            network_timeout (Optional[int]): Network timeout value in seconds passed to the underlying socket.
-
-        Raises:
-            ServerConnectivityError: If the server was not reachable or an SSL/TLS handshake could not be completed.
-        """
-        client_auth_requirement = ClientAuthenticationServerConfigurationEnum.DISABLED
-        ssl_connection = self.get_preconfigured_ssl_connection(override_ssl_version=OpenSslVersionEnum.SSLV23)
+    def _test_socket_connection(self, ssl_version, network_timeout):
+        ssl_connection = self.get_preconfigured_ssl_connection(override_ssl_version=ssl_version)
 
         # First only try a socket connection
         try:
@@ -207,12 +205,42 @@ class ServerConnectivityInfo(object):
         finally:
             ssl_connection.close()
 
+
+    def test_connectivity_to_server(self, network_timeout=None):
+        # type: (Optional[int]) -> None
+        """Attempts to perform a full SSL/TLS handshake with the server.
+
+        This method will ensure that the server can be reached, and will also identify one SSL/TLS version and one
+        cipher suite supported by the server. If the connectivity test is successful, the `ServerConnectivityInfo`
+        object is then ready to be passed to a `SynchronousScanner` or `ConcurrentScanner` in order to run scan commands
+        on the server.
+
+        Args:
+            network_timeout (Optional[int]): Network timeout value in seconds passed to the underlying socket.
+
+        Raises:
+            ServerConnectivityError: If the server was not reachable or an SSL/TLS handshake could not be completed.
+        """
+        client_auth_requirement = ClientAuthenticationServerConfigurationEnum.DISABLED
         # Then try to complete an SSL handshake to figure out the SSL version and cipher supported by the server
         ssl_versions_supported = []
         ssl_ciphers_supported = {}
 
-        for ssl_version in [OpenSslVersionEnum.TLSV1_2, OpenSslVersionEnum.TLSV1_1, OpenSslVersionEnum.TLSV1,
-                            OpenSslVersionEnum.SSLV3, OpenSslVersionEnum.SSLV23]:
+        ssl_versions = []
+        try:
+            self._test_socket_connection(OpenSslVersionEnum.DTLSV1, network_timeout)
+            ssl_versions.extend(self.DTLS_VERSIONS)
+        except ServerConnectivityError as e:
+            pass
+
+        try:
+            self._test_socket_connection(OpenSslVersionEnum.SSLV23, network_timeout)
+            ssl_versions.extend(self.TLS_VERSIONS)
+        except ServerConnectivityError as e:
+            if not ssl_versions:
+                raise e
+
+        for ssl_version in ssl_versions:
             # First try the default cipher list, and then all ciphers
             for cipher_list in [SSLConnection.DEFAULT_SSL_CIPHER_LIST, 'ALL:COMPLEMENTOFALL']:
                 ssl_connection = self.get_preconfigured_ssl_connection(override_ssl_version=ssl_version,

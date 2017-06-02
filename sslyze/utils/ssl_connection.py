@@ -21,7 +21,7 @@ except ImportError:
 
 from nassl import _nassl
 from nassl.debug_ssl_client import DebugSslClient
-from nassl.ssl_client import ClientCertificateRequested, OpenSslVerifyEnum
+from nassl.ssl_client import ClientCertificateRequested, OpenSslVerifyEnum, OpenSslVersionEnum
 from sslyze.utils.http_request_generator import HttpRequestGenerator
 
 from sslyze.utils.http_response_parser import HttpResponseParser
@@ -155,7 +155,12 @@ class SSLConnection(DebugSslClient):
                 raise ProxyError(self.ERR_CONNECT_REJECTED)
         else:
             # No proxy; connect directly to the server
-            self._sock = socket.create_connection(address=(self._ip, self._port), timeout=network_timeout)
+            if self._ssl_version in [ OpenSslVersionEnum.DTLSV1, OpenSslVersionEnum.DTLSV1_2 ]:
+                self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self._sock.settimeout(network_timeout)
+                self._sock.connect((self._ip, self._port))
+            else:
+                self._sock = socket.create_connection(address=(self._ip, self._port), timeout=network_timeout)
 
     def connect(self, network_timeout=None, network_max_retries=None):
         # type: (int, int) -> None
