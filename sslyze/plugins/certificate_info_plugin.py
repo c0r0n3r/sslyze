@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import optparse
+from abc import ABCMeta
 import os
 from ssl import CertificateError
 from xml.etree.ElementTree import Element
@@ -95,20 +95,17 @@ class CertificateInfoPlugin(plugin_base.Plugin):
         return [CertificateInfoScanCommand]
 
     @classmethod
-    def get_cli_option_group(cls):
-        options = super(CertificateInfoPlugin, cls).get_cli_option_group()
+    def add_cli_arguments(cls, group):
+        options = super(CertificateInfoPlugin, cls).add_cli_arguments(group)
 
         # Add the special optional argument for this plugin's commands
         # They must match the names in the commands' contructor
-        options.append(
-            optparse.make_option(
-                '--ca_file',
-                help='Path to a local trust store file (with root certificates in PEM format) to verify the validity '
-                     'of the server(s) certificate\'s chain(s) against.',
-                dest='ca_file'
-            )
+        group.add_argument(
+            '--ca_file',
+            help='Path to a local trust store file (with root certificates in PEM format) to verify the validity '
+                 'of the server(s) certificate\'s chain(s) against.',
+            dest='ca_file'
         )
-        return options
 
 
     def process_task(self, server_info, scan_command):

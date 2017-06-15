@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 
 import abc
 import inspect
-import optparse
 from xml.etree.ElementTree import Element
 
 from sslyze.server_connectivity import ServerConnectivityInfo
@@ -75,13 +74,11 @@ class Plugin(object):
         raise NotImplementedError()
 
     @classmethod
-    def get_cli_option_group(cls):
+    def add_cli_arguments(cls, group):
         # TODO(ad): Refactor this to do more, after switching away from optparse
-        options = []
         for scan_command_class in cls.get_available_commands():
-            options.append(optparse.make_option('--' + scan_command_class.get_cli_argument(), action='store_true',
-                                                help=scan_command_class.get_description()))
-        return options
+            group.add_argument('--' + scan_command_class.get_cli_argument(), action='store_true',
+                               help=scan_command_class.get_description())
 
 
     @abc.abstractmethod

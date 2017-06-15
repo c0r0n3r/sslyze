@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
-import optparse
 from abc import ABCMeta
 from operator import attrgetter
 from xml.etree.ElementTree import Element
@@ -101,29 +100,24 @@ class OpenSslCipherSuitesPlugin(Plugin):
 
 
     @classmethod
-    def get_cli_option_group(cls):
-        options = super(OpenSslCipherSuitesPlugin, cls).get_cli_option_group()
+    def add_cli_arguments(cls, group):
+        super(OpenSslCipherSuitesPlugin, cls).add_cli_arguments(group)
 
         # Add the special optional argument for this plugin's commands
         # They must match the names in the commands' contructor
-        options.append(
-            optparse.make_option(
-                # TODO(ad): Move this option to the CLI parser ?
-                '--http_get',
-                help='Option - For each cipher suite, sends an HTTP GET request after completing the SSL handshake '
-                     'and returns the HTTP status code.',
-                action='store_true'
-            )
+        group.add_argument(
+            # TODO(ad): Move this option to the CLI parser ?
+            '--http_get',
+            help='Option - For each cipher suite, sends an HTTP GET request after completing the SSL handshake '
+                 'and returns the HTTP status code.',
+            action='store_true'
         )
-        options.append(
-            optparse.make_option(
-                # TODO(ad): Move this option to the CLI parser ?
-                '--hide_rejected_ciphers',
-                help='Option - Hides the (usually long) list of cipher suites that were rejected by the server(s).',
-                action='store_true'
-            )
+        group.add_argument(
+            # TODO(ad): Move this option to the CLI parser ?
+            '--hide_rejected_ciphers',
+            help='Option - Hides the (usually long) list of cipher suites that were rejected by the server(s).',
+            action='store_true'
         )
-        return options
 
 
     def process_task(self, server_connectivity_info, scan_command):
