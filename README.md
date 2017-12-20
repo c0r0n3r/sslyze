@@ -2,6 +2,7 @@ SSLyze
 ======
 
 [![Build Status](https://travis-ci.org/nabla-c0d3/sslyze.svg?branch=master)](https://travis-ci.org/nabla-c0d3/sslyze)
+[![Coverage Status](https://coveralls.io/repos/github/nabla-c0d3/sslyze/badge.svg?branch=master)](https://coveralls.io/github/nabla-c0d3/sslyze?branch=master)
 [![PyPI version](https://badge.fury.io/py/SSLyze.svg)](https://badge.fury.io/py/SSLyze)
 
 Fast and powerful SSL/TLS server scanning library for Python 2.7 and 3.4+.
