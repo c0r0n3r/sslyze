@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import random
-from _elementtree import Element
+from xml.etree.ElementTree import Element
 from multiprocessing import JoinableQueue
 
 from sslyze.plugins.plugin_base import PluginScanResult

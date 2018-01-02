@@ -1,6 +1,7 @@
 #!/bin/sh -
-"exec" "python" "-O" "$0" "$@"
 from __future__ import print_function
+
+"exec" "python" "-O" "$0" "$@"
 
 __doc__ = """Tiny HTTP Proxy.
 
