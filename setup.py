@@ -34,8 +34,6 @@ SSLYZE_SETUP = {
         'Topic :: System :: Networking :: Monitoring',
         'Topic :: Security',
     ],
-    'test_suite':    'nose.collector',
-    'tests_require': ['nose'],
 }
 
 if __name__ == "__main__":

@@ -1,15 +1,52 @@
+dist: trusty
+sudo: false
 language: python
-python:
-  - "2.7"
-  - "3.4"
-  - "3.6"
-  - "pypy3.5-5.8.0"
-# Command to install dependencies
+
+cache:
+  directories:
+    - $HOME/.cache/pip
+
+env:
+  global:
+    - LC_ALL=en_US.UTF-8
+
+matrix:
+  include:
+  #- python: "2.7"
+  #  env: TOXENV=py27
+  #- python: "3.4"
+  #  env: TOXENV=py34
+  #- python: "3.6"
+  #  env: TOXENV=py36
+  - env: TOXENV=pypy
+
 install:
-  - pip install -U pip setuptools
-  - pip install -r requirements.txt
-# Command to run tests
-script: "python setup.py test"
+  - |
+    # install our own pypy. This can be removed if and when Travis gets a reasonably up to date pypy
+    if [[ "${TOXENV}" = pypy* ]]; then
+        rm -rf ~/.pyenv
+        git clone --depth=1 https://github.com/yyuu/pyenv.git ~/.pyenv
+        PYENV_ROOT="$HOME/.pyenv"
+        PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init -)"
+        pyenv install pypy-5.10.0
+        pyenv global pypy-5.10.0
+    fi
+    pip install virtualenv
+    python -m virtualenv ~/.venv
+    ~/.venv/bin/pip install tox coverage
+
+script:
+  - |
+    # activate the pypy env we installed via our custom pyenv in the install stage
+    if [[ "${TOXENV}" == "pypy" ]]; then
+        PYENV_ROOT="$HOME/.pyenv"
+        PATH="$PYENV_ROOT/bin:$PATH"
+        eval "$(pyenv init -)"
+        pypy -V
+    fi
+    ~/.venv/bin/tox -v
+
 deploy:
   provider: pypi
   user: "nabla"
@@ -17,3 +54,4 @@ deploy:
     secure: "L/pKWyeRCz9Obzl9ihBj9BFJs32A/EsitHKfm2mMDkXy8LI9vDja96TVZpLqDLGLTDx/AwFOhu2Ntc9UGiWokK/ayETv9/e1pM0lFyaOsQ2eznTLuCbpI0WxfpTQ3dbXizjfp+/RdanIbilryEN/nhoCf1x6MgeE3ALH+LmP7J+mNuMLdMI9NR/55V4JT3AC48S5kAI/d3moa38O67UixeW3zizKfpKj63oUSxp2uNSCf27Bwb34QqckizU3gJctzDXJZM2ptG1gECPIU5YOJyI9c8GLNNnWeKsaWf+TPraR9Sw8Los4JQRGO4Mad05JGWfHftdoveBSTpwweLxtRrf5+jDXUtZtkIqkty4KCK4w6s7CC3T8IA3q/uxN2BfuOyKx7pZXAe1kt50EbYa/mqPg9yXOd/vaIMUFQoYLU0mGEc1somvy8WP89oCNU+nVCKN2LcRUtx4IZksTWTbhekKWGg7eHvHx9UeFSsVtgbaG13bdStUT4qaVZLhWyNm9uyakAzQmFIIPTOSJRnW1pVf8kgiwvaRw7K/s+JxN95Xil5nrPuj9C1UClGGN6jjGuJmIPzDazOfwzr1jrBQYBSaEP8tcfXdBWmpmnnx245mXHQw3y5Wtknv1dKlecLnL5+BHt40KSI8whkjvHh40V6ALYAyPc7wPR1OpNXPbZdw="
   on:
     tags: true
+
